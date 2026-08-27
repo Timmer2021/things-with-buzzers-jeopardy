@@ -17,12 +17,6 @@ angular.module('myApp.controllers').
     var value = response.id.split('_');
     $scope.result.value = $scope.result.dd_value = parseInt(value[3]) * (value[1] === 'J' ? 200 : 400);
 
-    // NEW FUNCTION: Sends the start signal to Node-RED to arm the buzzers
-    $scope.armBuzzers = function() {
-      socket.emit('clue:start', response.id);
-      console.log('Buzzers manually armed for clue: ' + response.id);
-    };
-
     $scope.setResult = function (num, correct) {
       var key = 'player_' + num;
       $scope.result[key][correct ? 'right' : 'wrong'] = !$scope.result[key][correct ? 'right' : 'wrong'];
