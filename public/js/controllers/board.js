@@ -139,8 +139,8 @@ angular.module('myApp.controllers').
       $scope.scoreHtmlTop = buildScoresTop();
     });
 
-    // Build websocket URL pointing to custom test port 22643 via Nginx Proxy Manager
-    var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.hostname + ":22643/stream";
+    // Build websocket URL dynamically through Nginx Proxy Manager /stream location path
+    var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/stream";
     console.log("Connecting to Jeopardy game websocket server " + wsURL);
     connectToWebSocket(wsURL);
   });
