@@ -139,14 +139,8 @@ angular.module('myApp.controllers').
       $scope.scoreHtmlTop = buildScoresTop();
     });
 
-    // Build websocket URL
-    // In our current setup, the buzzer server + the jeopardy
-    // server are running on the same server.
-    // How we build the URL is far from perfect and not secure.
-    // But we assume this game runs in a safe and self-controlled
-    // environment.
-    // Means: Not intended for internet production traffic.
-    var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/stream";
+    // Build websocket URL pointing to custom test port 22643 via Nginx Proxy Manager
+    var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.hostname + ":22643/stream";
     console.log("Connecting to Jeopardy game websocket server " + wsURL);
     connectToWebSocket(wsURL);
   });
