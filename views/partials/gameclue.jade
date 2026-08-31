@@ -4,6 +4,11 @@
       .label.label-warning.pull-right(ng-show='clue.daily_double') DD
       .label.label-danger.pull-right(ng-show='clue.triple_stumper') TS
 .modal-body
+  // --- ADDED ARM BUZZERS BUTTON FOR HOST CONTROL ---
+  .row.text-center(style='margin-bottom: 15px;')
+    .col-md-12
+      button.btn.btn-warning.btn-lg(type='button', ng-click='armBuzzers()') 🔔 ARM BUZZERS
+
   h1.text-center(ng-bind-html='clue.clue_html')
   h2.text-center
     em {{ clue.correct_response }}
