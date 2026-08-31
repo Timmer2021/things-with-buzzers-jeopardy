@@ -11,7 +11,34 @@ angular.module('myApp.controllers').
         $scope.scoreHtml = buildScores();
         $scope.scoreHtmlTop = buildScoresTop();
       }
-    })
+    });
+
+    // --- CATCH BUZZER VERDICT, WIPE SCREEN, & PLAY SOUND ON INCORRECT ---
+    socket.on('buzzer:verdict', function (data) {
+      console.log(">>> BOARD CAUGHT BUZZER VERDICT:", data);
+      
+      if (window.buzzerInterval) {
+        clearInterval(window.buzzerInterval);
+        window.buzzerInterval = null;
+      }
+
+      var el = document.getElementById("button-hit");
+      if (el) {
+        el.style.visibility = "hidden";
+        el.style.display = "none";
+        el.innerText = "";
+      }
+
+      // If the verdict action is incorrect (X button), play the timesup audio
+      if (data && data.action === 'incorrect') {
+        var timesUpAudio = window.timesUpAudio || new Audio('/audio/timesup.mp3');
+        window.timesUpAudio = timesUpAudio;
+        timesUpAudio.currentTime = 0;
+        timesUpAudio.play().catch(function(err) {
+          console.log("Audio play blocked: ", err);
+        });
+      }
+    });
 
     function buildScores () {
       var count = 3;
@@ -52,7 +79,6 @@ angular.module('myApp.controllers').
       var width = 4;
       var buffer = "";
 
-      // Check to see if there are players 4 and 5 there and process accordingly
       if($scope.game.player_4 && $scope.game.player_4.name) {
         count = 4;
         width = 3;
@@ -79,10 +105,8 @@ angular.module('myApp.controllers').
     }
 
     socket.on('round:start', function (data) {
-
       $scope.data = data.data;
       $scope.game = data.game;
-
       $scope.scoreHtmlTop = buildScoresTop();
 
       if (modalInstance) {
@@ -139,8 +163,7 @@ angular.module('myApp.controllers').
       $scope.scoreHtmlTop = buildScoresTop();
     });
 
-    // Build websocket URL dynamically through Nginx Proxy Manager /stream location path
-    var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/stream";
+    var wsURL = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/stream"
     console.log("Connecting to Jeopardy game websocket server " + wsURL);
     connectToWebSocket(wsURL);
   });
@@ -159,33 +182,51 @@ function connectToWebSocket(websocketServerLocation){
   }
   ws.onclose = function(){
     console.log("WebSocket -> Jeopardy game server: Connection closed ... Try to reconnect");
-    // Try to reconnect in 5 seconds
     setTimeout(function(){connectToWebSocket(websocketServerLocation)}, 5000);
   }
 
-  // When a new message from the WebSocket server comes in ...
-  // Mainly if a participant hits one of the buttons
   ws.onmessage = function(evt) {
-    currentTime = Math.floor(Date.now() / 1000)
-    if (lastHit != 0 && (currentTime - lastHit) < 5) {
-      return;
-    }
-    lastHit = currentTime;
-
-    // The data that was sent by the server
     var message = JSON.parse(evt.data);
+    console.log("WebSocket message received:", message);
 
-    var buttonColor = message.Color
+    var buttonColor = message.Color;
+    if (!buttonColor || buttonColor === 'grey' || buttonColor === 'gray') return;
 
     var el = document.getElementById("button-hit");
-    var color = el.style.backgroundColor;
+    if (!el) return;
 
     el.style.backgroundColor = buttonColor;
     el.style.visibility = "visible";
+    el.style.display = "flex";
+    el.style.alignItems = "center";
+    el.style.justifyContent = "center";
+    el.style.fontSize = "60px";
+    el.style.fontWeight = "bold";
+    el.style.color = (buttonColor === "yellow" || buttonColor === "white") ? "black" : "white";
 
-    setTimeout(function(){
-      el.style.backgroundColor = "none";
-      el.style.visibility = "hidden";
-    }, 5000);
+    var timeLeft = 15;
+    el.innerText = timeLeft;
+
+    if (window.buzzerInterval) clearInterval(window.buzzerInterval);
+    
+    var timesUpAudio = window.timesUpAudio || new Audio('/audio/timesup.mp3');
+    window.timesUpAudio = timesUpAudio;
+
+    window.buzzerInterval = setInterval(function() {
+      timeLeft--;
+      if (timeLeft > 0) {
+        el.innerText = timeLeft;
+      } else {
+        clearInterval(window.buzzerInterval);
+        window.buzzerInterval = null;
+        el.style.visibility = "hidden";
+        el.innerText = "";
+        
+        timesUpAudio.currentTime = 0;
+        timesUpAudio.play().catch(function(err) {
+          console.log("Audio play blocked: ", err);
+        });
+      }
+    }, 1000);
   }
 }
